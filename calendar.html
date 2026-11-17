@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Calendar Sync · Wonkday</title>
+<link rel="stylesheet" href="css/app.css" />
+<style>
+  main.page { display: grid; grid-template-columns: 1.4fr 1fr; gap: 24px; align-items: start; }
+  @media (max-width: 900px) { main.page { grid-template-columns: 1fr; } }
+
+  .grid-wrap { overflow-x: auto; }
+  .week-grid {
+    display: grid;
+    grid-template-columns: 56px repeat(5, 1fr);
+    min-width: 560px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    overflow: hidden;
+    position: relative;
+  }
+  .week-grid .head {
+    background: #fafbfc;
+    font-size: 12px;
+    font-weight: 600;
+    text-align: center;
+    padding: 8px 4px;
+    border-bottom: 1px solid var(--border);
+    border-left: 1px solid var(--border);
+    color: var(--muted);
+  }
+  .week-grid .head.corner { border-left: none; }
+  .week-grid .time-label {
+    font-size: 11px;
+    color: var(--muted);
+    text-align: right;
+    padding: 2px 6px 0 0;
+    border-top: 1px solid #f0f1f4;
+    position: relative;
+    top: -6px;
+  }
+  .week-grid .cell {
+    border-left: 1px solid var(--border);
+    border-top: 1px solid #f0f1f4;
+    height: 24px;
+    position: relative;
+  }
+  .block {
+    position: absolute;
+    border-radius: 6px;
+    padding: 4px 6px;
+    font-size: 11px;
+    line-height: 1.25;
+    color: #fff;
+    overflow: hidden;
+  }
+  .block.class { background: var(--class-color); }
+  .block.work { background: var(--work-color); }
+  .block.commitment { background: var(--commit-color); }
+  .block strong { display: block; font-weight: 600; }
+  .block.conflict-highlight {
+    box-shadow: 0 0 0 3px #fff, 0 0 0 6px var(--danger);
+    z-index: 5;
+  }
+
+  .empty {
+    border: 2px dashed var(--border);
+    border-radius: 8px;
+    padding: 56px 24px;
+    text-align: center;
+    color: var(--muted);
+    font-size: 13px;
+  }
+  .empty strong { display: block; color: var(--text); font-size: 14px; margin-bottom: 4px; }
+
+  .item-list { margin-top: 16px; display: flex; flex-direction: column; gap: 8px; }
+  .item-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 8px 10px;
+    font-size: 13px;
+  }
+  .item-row.has-conflict { border-color: var(--danger); background: var(--danger-light); }
+  .item-row .tag {
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    padding: 2px 6px;
+    border-radius: 4px;
+    color: #fff;
+    margin-right: 8px;
+  }
+  .item-row .tag.class { background: var(--class-color); }
+  .item-row .tag.work { background: var(--work-color); }
+  .item-row .tag.commitment { background: var(--commit-color); }
+  .item-row .tag.sync { background: var(--muted); }
+  .item-row .meta { color: var(--muted); font-size: 12px; margin-left: 4px; }
+  .item-row .source { color: var(--muted); font-size: 12px; white-space: nowrap; }
+  .item-row .warn { color: var(--danger); font-size: 12px; font-weight: 600; margin-left: 8px; }
+
+  button.primary {
+    width: 100%;
+    padding: 10px 14px;
+    background: var(--accent);
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    margin-top: 10px;
+  }
+  button.primary:hover { background: var(--accent-dark); }
+  button.secondary {
+    width: 100%;
+    padding: 8px 14px;
+    background: #fff;
+    color: var(--accent);
+    border: 1px solid var(--accent);
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    margin-top: 10px;
+  }
+  button.secondary:hover { background: var(--accent-light); }
+
+  .result { margin-top: 12px; border-radius: 10px; padding: 12px 14px; font-size: 13px; line-height: 1.45; }
+  .result.ok { background: var(--success-light); color: var(--success); border: 1px solid #86efac; }
+  .result.bad { background: var(--danger-light); color: var(--danger); border: 1px solid #fca5a5; }
+  .result.info { background: var(--accent-light); color: var(--accent-dark); border: 1px solid #c7d2fe; }
+  .result a { color: inherit; font-weight: 600; }
+
+  .options { display: flex; flex-direction: column; gap: 8px; }
+  .options label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 10px 12px;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    background: #fafbfc;
+  }
+  .options label:has(input:checked) { background: var(--accent-light); border-color: var(--accent); color: var(--accent); }
+  .options label.disabled { opacity: 0.5; cursor: default; }
+  .options input { margin: 0; }
+
+  .section { margin-top: 24px; padding-top: 20px; border-top: 1px dashed var(--border); }
+  .list-title { margin: 20px 0 0; font-size: 12px; font-weight: 600; color: var(--muted); }
+  .privacy { margin: 14px 0 0; font-size: 12px; color: var(--muted); line-height: 1.5; }
+
+  .connecting { display: flex; align-items: center; gap: 12px; padding: 16px 0 4px; font-size: 14px; }
+  .spinner {
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    border: 3px solid var(--accent-light);
+    border-top-color: var(--accent);
+    animation: spin 0.8s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+</style>
+</head>
+<body>
+
+<nav class="app-nav" aria-label="Main">
+  <div class="inner">
+    <a class="brand" href="index.html"><span class="logo">W</span>Wonkday</a>
+    <div class="links">
+      <a href="index.html">Home</a>
+      <a href="calendar.html" aria-current="page">Calendar</a>
+      <a href="schedules.html">Saved schedules</a>
+      <a href="generate.html">Generate</a>
+    </div>
+    <div class="user"><span class="avatar">JH</span>Jenny H.</div>
+  </div>
+</nav>
+
+<header class="page-header">
+  <h1>Calendar Sync</h1>
+  <p>Task 1 — Connect Google or Outlook Calendar to bring in your commitments, then sync your classes back to it.</p>
+</header>
+
+<main class="page">
+  <section class="panel">
+    <h2 id="weekTitle">Your week</h2>
+    <p class="sub" id="weekSub"></p>
+    <div id="weekArea"></div>
+  </section>
+
+  <section class="panel" id="sidePanel"></section>
+</main>
+
+<script src="js/store.js"></script>
+<script src="js/calendar.js"></script>
+</body>
+</html>
