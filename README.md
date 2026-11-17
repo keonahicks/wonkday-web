@@ -23,3 +23,4 @@ Install the **Live Server** extension, right-click `index.html`, and choose **Op
 To reset the prototype to its starting state, open the browser's DevTools → Application → Local Storage and clear it. You can also use **Reset to default example data** on the Saved schedules page.
 
 ## Team contribution
+Keona: Created app base (shared nav bar, page layout and styling, home page, and shared data) and Task 1, calendar sync
