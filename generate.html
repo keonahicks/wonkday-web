@@ -5,6 +5,286 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Generate · Wonkday</title>
 <link rel="stylesheet" href="css/app.css" />
+<style>
+  .gen-layout {
+    display: grid;
+    grid-template-columns: 1.1fr 1.4fr;
+    gap: 24px;
+    align-items: start;
+  }
+  @media (max-width: 900px) { .gen-layout { grid-template-columns: 1fr; } }
+
+  /* ── Course cards ── */
+  .course-card {
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    overflow: hidden;
+    margin-bottom: 12px;
+  }
+  .course-head {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 12px;
+    background: #f3f0ff;
+    border-bottom: 1px solid var(--border);
+  }
+  .course-head input[type="text"] {
+    flex: 1;
+    border: none;
+    background: transparent;
+    font-size: 14px;
+    font-weight: 600;
+    color: #4c1d95;
+    outline: none;
+    min-width: 0;
+  }
+  .course-head .remove-course {
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: var(--muted);
+    font-size: 20px;
+    padding: 0 2px;
+    line-height: 1;
+  }
+  .course-head .remove-course:hover { color: var(--danger); }
+
+  .sections-area { padding: 8px 12px 10px; }
+
+  .section-row {
+    display: grid;
+    grid-template-columns: 60px 1fr auto auto auto;
+    gap: 6px;
+    align-items: center;
+    margin-bottom: 8px;
+  }
+  .sec-label {
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 5px 7px;
+    font-size: 12px;
+    font-family: inherit;
+    color: var(--muted);
+    width: 100%;
+  }
+  .days-wrap { display: flex; gap: 3px; }
+  .day-btn {
+    width: 28px;
+    height: 26px;
+    border-radius: 5px;
+    border: 1px solid var(--border);
+    background: #fff;
+    font-size: 11px;
+    font-weight: 600;
+    cursor: pointer;
+    color: var(--muted);
+    padding: 0;
+  }
+  .day-btn.on { background: var(--candidate-color); color: #fff; border-color: var(--candidate-color); }
+  input[type="time"] {
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 5px 6px;
+    font-size: 12px;
+    font-family: inherit;
+    width: 86px;
+  }
+  .remove-sec {
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: var(--muted);
+    font-size: 17px;
+    padding: 0 2px;
+    line-height: 1;
+  }
+  .remove-sec:hover { color: var(--danger); }
+
+  .add-sec-btn {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background: none;
+    border: 1px dashed var(--border);
+    border-radius: 6px;
+    padding: 5px 10px;
+    font-size: 12px;
+    color: var(--muted);
+    cursor: pointer;
+    width: 100%;
+    margin-top: 2px;
+    font-family: inherit;
+  }
+  .add-sec-btn:hover { border-color: var(--candidate-color); color: var(--candidate-color); }
+
+  .add-course-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    background: none;
+    border: 1px dashed var(--border);
+    border-radius: 10px;
+    padding: 12px;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--accent);
+    cursor: pointer;
+    width: 100%;
+    font-family: inherit;
+    margin-top: 4px;
+  }
+  .add-course-btn:hover { background: var(--accent-light); border-color: var(--accent); }
+
+  /* ── Commitments list ── */
+  .item-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 8px 10px;
+    font-size: 13px;
+    margin-top: 8px;
+  }
+  .tag {
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    padding: 2px 6px;
+    border-radius: 4px;
+    color: #fff;
+    margin-right: 8px;
+  }
+  .tag.class      { background: var(--class-color); }
+  .tag.work       { background: var(--work-color); }
+  .tag.commitment { background: var(--commit-color); }
+  .meta { color: var(--muted); font-size: 12px; margin-left: 4px; }
+
+  /* ── Generate button ── */
+  .gen-btn {
+    width: 100%;
+    padding: 13px;
+    background: var(--accent);
+    color: #fff;
+    border: none;
+    border-radius: 10px;
+    font-size: 15px;
+    font-weight: 700;
+    cursor: pointer;
+    margin-bottom: 20px;
+    font-family: inherit;
+  }
+  .gen-btn:hover { background: var(--accent-dark); }
+
+  /* ── Results ── */
+  .result-count {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--muted);
+    margin-bottom: 12px;
+  }
+  .ok-label  { color: var(--success); }
+  .bad-label { color: var(--danger); }
+
+  .result-card {
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    overflow: hidden;
+    margin-bottom: 14px;
+  }
+  .result-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 9px 14px;
+    background: #f3f0ff;
+    border-bottom: 1px solid var(--border);
+    font-size: 13px;
+    font-weight: 600;
+    color: #4c1d95;
+  }
+  .result-body { padding: 12px 14px; }
+
+  /* Mini grid */
+  .mini-wrap { overflow-x: auto; margin-bottom: 10px; }
+  .mini-grid {
+    display: grid;
+    grid-template-columns: 44px repeat(5, 1fr);
+    min-width: 460px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    overflow: hidden;
+    position: relative;
+  }
+  .mhead {
+    background: #fafbfc;
+    font-size: 11px;
+    font-weight: 600;
+    text-align: center;
+    padding: 5px 2px;
+    border-bottom: 1px solid var(--border);
+    border-left: 1px solid var(--border);
+    color: var(--muted);
+  }
+  .mhead.corner { border-left: none; }
+  .mtime {
+    font-size: 10px;
+    color: var(--muted);
+    text-align: right;
+    padding: 1px 4px 0 0;
+    border-top: 1px solid #f0f1f4;
+    position: relative;
+    top: -5px;
+  }
+  .mcell {
+    border-left: 1px solid var(--border);
+    border-top: 1px solid #f0f1f4;
+    height: 16px;
+    position: relative;
+  }
+  .mblock {
+    position: absolute;
+    border-radius: 4px;
+    padding: 2px 4px;
+    font-size: 10px;
+    line-height: 1.2;
+    color: #fff;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+  }
+  .mblock.candidate   { background: var(--candidate-color); }
+  .mblock.class       { background: var(--class-color); }
+  .mblock.work        { background: var(--work-color); }
+  .mblock.commitment  { background: var(--commit-color); }
+
+  .sec-rows { display: flex; flex-direction: column; gap: 4px; }
+  .sec-row-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 12px;
+  }
+  .sec-row-item .cname { font-weight: 600; flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .sec-row-item .ctime { color: var(--muted); white-space: nowrap; }
+
+  .empty-state {
+    border: 2px dashed var(--border);
+    border-radius: 10px;
+    padding: 48px 24px;
+    text-align: center;
+    color: var(--muted);
+    font-size: 13px;
+  }
+  .empty-state strong { display: block; color: var(--text); font-size: 15px; margin-bottom: 6px; }
+
+  .legend { display: flex; gap: 14px; margin-top: 10px; font-size: 12px; color: var(--muted); flex-wrap: wrap; }
+  .legend span { display: inline-flex; align-items: center; gap: 5px; }
+  .swatch { width: 10px; height: 10px; border-radius: 3px; display: inline-block; flex-shrink: 0; }
+</style>
 </head>
 <body>
 
@@ -23,16 +303,336 @@
 
 <header class="page-header">
   <h1>Schedule Generator</h1>
-  <p>Task 3 — Pick your classes, then see every schedule that fits your existing commitments.</p>
+  <p>Task 3 — Add each course you need with all its section options. See every schedule that fits your existing commitments.</p>
 </header>
 
 <main class="page">
-  <section class="panel">
-    <h2>Generate schedules</h2>
-    <p class="sub">This page is being built.</p>
-  </section>
+  <div class="gen-layout">
+
+    <!-- Left: courses + existing commitments -->
+    <div>
+      <section class="panel" style="margin-bottom:24px">
+        <h2>Courses to schedule</h2>
+        <p class="sub">For each course, add every section time that could work. The generator tries every combination and shows you the ones that fit.</p>
+        <div id="courseList"></div>
+        <button class="add-course-btn" id="addCourseBtn">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          Add a course
+        </button>
+      </section>
+
+      <section class="panel">
+        <h2>Your existing commitments</h2>
+        <p class="sub" id="commitSub"></p>
+        <div id="commitList"></div>
+      </section>
+    </div>
+
+    <!-- Right: generate + results -->
+    <div>
+      <button class="gen-btn" id="genBtn">
+        Generate valid schedules →
+      </button>
+      <div id="results">
+        <div class="empty-state">
+          <strong>No results yet</strong>
+          Add courses with section options on the left, then click Generate.
+        </div>
+      </div>
+    </div>
+
+  </div>
 </main>
 
 <script src="js/store.js"></script>
+<script>
+(() => {
+  const START_H = 8;
+  const END_H   = 21;
+  const ROW_H   = 16; // px per 30-min slot
+
+  const esc = s => String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+
+  let uidN = 1;
+  const uid = () => `g${uidN++}`;
+
+  // ── State ────────────────────────────────────────────────────────────
+  // courses: [ { id, name, sections: [ { id, label, days:[], start, end } ] } ]
+  let courses = [
+    {
+      id: uid(), name: "BIA 658: Social Network Analytics",
+      sections: [
+        { id: uid(), label: "Sec A", days: ["Mon","Wed"], start: "10:30", end: "11:30" },
+        { id: uid(), label: "Sec B", days: ["Tue","Thu"], start: "14:00", end: "15:15" },
+      ]
+    },
+    {
+      id: uid(), name: "BIA 695: Capstone Studio",
+      sections: [
+        { id: uid(), label: "Sec A", days: ["Fri"],        start: "09:00", end: "10:00" },
+        { id: uid(), label: "Sec B", days: ["Fri"],        start: "12:00", end: "13:00" },
+      ]
+    },
+    {
+      id: uid(), name: "CS 583: Big Data Technologies",
+      sections: [
+        { id: uid(), label: "Sec A", days: ["Mon","Wed","Fri"], start: "13:00", end: "13:50" },
+        { id: uid(), label: "Sec B", days: ["Tue","Thu"],       start: "09:00", end: "10:15" },
+      ]
+    },
+  ];
+
+  // ── Algorithm ────────────────────────────────────────────────────────
+  function generate() {
+    const existing = WonkStore.getItems();
+    const groups   = courses.map(c => c.sections);
+    if (!groups.length || groups.some(g => !g.length)) return null;
+
+    // Cartesian product
+    const all = groups.reduce(
+      (acc, grp) => acc.flatMap(combo => grp.map(s => [...combo, s])),
+      [[]]
+    );
+
+    return all.filter(combo => {
+      for (let i = 0; i < combo.length; i++) {
+        // vs. existing items
+        for (const item of existing) {
+          if (WonkStore.overlaps(combo[i], item)) return false;
+        }
+        // vs. other sections in this combo
+        for (let j = i + 1; j < combo.length; j++) {
+          if (WonkStore.overlaps(combo[i], combo[j])) return false;
+        }
+      }
+      return true;
+    });
+  }
+
+  // ── Course panel ─────────────────────────────────────────────────────
+  function renderCourses() {
+    const list = document.getElementById('courseList');
+    list.innerHTML = '';
+    courses.forEach(course => {
+      const div = document.createElement('div');
+      div.className = 'course-card';
+      div.dataset.cid = course.id;
+      div.innerHTML = `
+        <div class="course-head">
+          <input type="text" class="cname-input" value="${esc(course.name)}" placeholder="Course name" />
+          <button class="remove-course" title="Remove course">×</button>
+        </div>
+        <div class="sections-area">
+          ${course.sections.map(s => secRowHTML(course.id, s)).join('')}
+          <button class="add-sec-btn">
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            Add another section
+          </button>
+        </div>`;
+
+      // events — course-level
+      div.querySelector('.cname-input').addEventListener('input', e => {
+        course.name = e.target.value;
+      });
+      div.querySelector('.remove-course').addEventListener('click', () => {
+        courses = courses.filter(c => c.id !== course.id);
+        renderCourses();
+      });
+      div.querySelector('.add-sec-btn').addEventListener('click', () => {
+        course.sections.push({
+          id: uid(),
+          label: `Sec ${String.fromCharCode(65 + course.sections.length)}`,
+          days: [], start: '09:00', end: '10:15'
+        });
+        renderCourses();
+      });
+
+      // events — per-section
+      div.querySelectorAll('.sec-row').forEach(row => {
+        const sid = row.dataset.sid;
+        const sec = course.sections.find(s => s.id === sid);
+        if (!sec) return;
+
+        row.querySelector('.remove-sec').addEventListener('click', () => {
+          if (course.sections.length <= 1) {
+            showToast('Each course needs at least one section');
+            return;
+          }
+          course.sections = course.sections.filter(s => s.id !== sid);
+          renderCourses();
+        });
+        row.querySelector('.sec-label').addEventListener('input', e => {
+          sec.label = e.target.value;
+        });
+        row.querySelectorAll('.day-btn').forEach(btn => {
+          btn.addEventListener('click', () => {
+            const d = btn.dataset.day;
+            if (sec.days.includes(d)) sec.days = sec.days.filter(x => x !== d);
+            else sec.days.push(d);
+            btn.classList.toggle('on', sec.days.includes(d));
+          });
+        });
+        row.querySelector('.sec-start').addEventListener('change', e => { sec.start = e.target.value; });
+        row.querySelector('.sec-end'  ).addEventListener('change', e => { sec.end   = e.target.value; });
+      });
+
+      list.appendChild(div);
+    });
+  }
+
+  function secRowHTML(cid, sec) {
+    return `
+      <div class="section-row sec-row" data-sid="${sec.id}">
+        <input type="text" class="sec-label" value="${esc(sec.label)}" placeholder="Label" />
+        <div class="days-wrap">
+          ${WonkStore.DAYS.map(d =>
+            `<button type="button" class="day-btn ${sec.days.includes(d) ? 'on' : ''}" data-day="${d}">${d.slice(0,2)}</button>`
+          ).join('')}
+        </div>
+        <input type="time" class="sec-start" value="${sec.start}" />
+        <input type="time" class="sec-end"   value="${sec.end}" />
+        <button type="button" class="remove-sec" title="Remove">×</button>
+      </div>`;
+  }
+
+  // ── Commitments panel ─────────────────────────────────────────────
+  function renderCommitments() {
+    const items = WonkStore.getItems();
+    document.getElementById('commitSub').textContent =
+      `${items.length} existing item${items.length !== 1 ? 's' : ''} — none of your generated schedules will conflict with these.`;
+    document.getElementById('commitList').innerHTML = items.length
+      ? items.map(it => `
+          <div class="item-row">
+            <span>
+              <span class="tag ${it.type}">${it.type}</span>
+              <strong>${esc(it.name)}</strong>
+              <span class="meta">${it.days.join('/')} · ${WonkStore.fmtRange(it.start, it.end)}</span>
+            </span>
+          </div>`).join('')
+      : '<p class="sub" style="margin-top:8px">No commitments loaded yet.</p>';
+  }
+
+  // ── Results ──────────────────────────────────────────────────────────
+  function renderResults() {
+    const area   = document.getElementById('results');
+    const combos = generate();
+
+    if (!combos) {
+      area.innerHTML = `<div class="empty-state"><strong>Missing section info</strong>Make sure every course has at least one section with days and start/end times filled in.</div>`;
+      return;
+    }
+    if (!combos.length) {
+      area.innerHTML = `
+        <div class="result-count"><span class="bad-label">No valid schedules found.</span></div>
+        <div class="empty-state">
+          <strong>All combinations conflict</strong>
+          Try adding more section options per course, or check your existing commitments on the left.
+        </div>`;
+      showToast('No conflict-free schedules found');
+      return;
+    }
+
+    area.innerHTML = `
+      <div class="result-count">
+        <span class="ok-label">✓ ${combos.length} valid schedule${combos.length !== 1 ? 's' : ''} found</span>
+        — no conflicts with your existing commitments.
+      </div>
+      ${combos.map((combo, i) => {
+        const dayCount = new Set(combo.flatMap(s => s.days)).size;
+        return `
+          <div class="result-card">
+            <div class="result-head">
+              <span>Schedule ${i + 1} of ${combos.length}</span>
+              <span>${dayCount} day${dayCount !== 1 ? 's' : ''} with new classes</span>
+            </div>
+            <div class="result-body">
+              <div class="mini-wrap">
+                <div class="mini-grid" id="mg${i}" style="grid-template-rows:auto repeat(${(END_H-START_H)*2},${ROW_H}px);"></div>
+              </div>
+              <div class="legend">
+                <span><span class="swatch" style="background:var(--candidate-color)"></span>New section</span>
+                <span><span class="swatch" style="background:var(--class-color)"></span>Class</span>
+                <span><span class="swatch" style="background:var(--work-color)"></span>Work</span>
+                <span><span class="swatch" style="background:var(--commit-color)"></span>Commitment</span>
+              </div>
+              <div class="sec-rows" style="margin-top:10px">
+                ${combo.map((s, j) => `
+                  <div class="sec-row-item">
+                    <span class="swatch" style="background:var(--candidate-color)"></span>
+                    <span class="cname">${esc(courses[j].name)}</span>
+                    <span class="ctime">${esc(s.label)} · ${s.days.join('/')} ${WonkStore.fmtRange(s.start, s.end)}</span>
+                  </div>`).join('')}
+              </div>
+            </div>
+          </div>`;
+      }).join('')}`;
+
+    // Paint mini grids after DOM is ready
+    requestAnimationFrame(() => {
+      const existing = WonkStore.getItems();
+      combos.forEach((combo, i) => {
+        const grid = document.getElementById(`mg${i}`);
+        if (!grid) return;
+        buildGrid(grid, combo, existing);
+      });
+    });
+
+    showToast(`${combos.length} valid schedule${combos.length !== 1 ? 's' : ''} found`);
+  }
+
+  function buildGrid(grid, candidateSecs, existingItems) {
+    const totalRows = (END_H - START_H) * 2;
+    let html = `<div class="mhead corner"></div>` +
+      WonkStore.DAYS.map(d => `<div class="mhead">${d}</div>`).join('');
+    for (let r = 0; r < totalRows; r++) {
+      const mins = r * 30;
+      const hr   = START_H + Math.floor(mins / 60);
+      const lbl  = mins % 60 === 0 ? WonkStore.fmtTime(`${hr}:00`) : '';
+      html += `<div class="mtime">${lbl}</div>` +
+        WonkStore.DAYS.map(() => '<div class="mcell"></div>').join('');
+    }
+    grid.innerHTML = html;
+
+    requestAnimationFrame(() => {
+      const headerH = (grid.querySelector('.mhead') || {}).getBoundingClientRect?.().height ?? 22;
+      const all = [
+        ...existingItems.map(it => ({ ...it, _cls: it.type })),
+        ...candidateSecs.map(s  => ({ ...s,  _cls: 'candidate' })),
+      ];
+      WonkStore.DAYS.forEach((day, di) => {
+        all.filter(it => it.days.includes(day)).forEach(it => {
+          const sm = WonkStore.toMinutes(it.start) - START_H * 60;
+          const em = WonkStore.toMinutes(it.end)   - START_H * 60;
+          if (sm < 0 || em <= 0) return;
+          const block = document.createElement('div');
+          block.className = `mblock ${it._cls}`;
+          block.style.cssText = `
+            top:    ${headerH + (sm / 30) * ROW_H}px;
+            height: ${Math.max(((em - sm) / 30) * ROW_H, 14)}px;
+            left:   calc(44px + ${di} * ((100% - 44px) / 5) + 2px);
+            width:  calc((100% - 44px) / 5 - 4px);`;
+          block.title       = `${it.name} · ${WonkStore.fmtRange(it.start, it.end)}`;
+          block.textContent = it.name;
+          grid.appendChild(block);
+        });
+      });
+    });
+  }
+
+  // ── Init ─────────────────────────────────────────────────────────────
+  document.getElementById('addCourseBtn').addEventListener('click', () => {
+    courses.push({
+      id: uid(), name: 'New Course',
+      sections: [{ id: uid(), label: 'Sec A', days: [], start: '09:00', end: '10:15' }]
+    });
+    renderCourses();
+  });
+
+  document.getElementById('genBtn').addEventListener('click', renderResults);
+
+  renderCourses();
+  renderCommitments();
+})();
+</script>
 </body>
 </html>
