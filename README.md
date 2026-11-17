@@ -23,7 +23,7 @@ Install the **Live Server** extension, right-click `index.html`, and choose **Op
 To reset the prototype to its starting state, open the browser's DevTools → Application → Local Storage and clear it. You can also use **Reset to default example data** on the Saved schedules page.
 
 ## Team contribution
-Keona: Created app base (shared nav bar, page layout and styling, home page, and shared data) and Task 1, calendar sync
-Dan: Created saved schedule page (task 2), based on previous prototypes and implementing feedback from assignment 5
-Sam: Created the generate page (task 3), which allows users to view all possible course sections that fit into their schedule
-Shane: Worked as a project manager, set up a planning doc and a demo prep doc, and made QOL/polish changes to the codebase to allow for input persistance
+* Keona: Created app base (shared nav bar, page layout and styling, home page, and shared data) and Task 1, calendar sync
+* Dan: Created saved schedule page (task 2), based on previous prototypes and implementing feedback from assignment 5
+* Sam: Created the generate page (task 3), which allows users to view all possible course sections that fit into their schedule
+* Shane: Worked as a project manager, set up a planning doc and a demo prep doc, and made QOL/polish changes to the codebase to allow for input persistance
