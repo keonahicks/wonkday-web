@@ -354,11 +354,11 @@
   const esc = s => String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 
   let uidN = 1;
-  const uid = () => `g${uidN++}`;
+  const uid = () => `g${Date.now()}_${uidN++}`;
 
   // ── State ────────────────────────────────────────────────────────────
   // courses: [ { id, name, sections: [ { id, label, days:[], start, end } ] } ]
-  let courses = [
+  const DEFAULT_COURSES = [
     {
       id: uid(), name: "BIA 658: Social Network Analytics",
       sections: [
@@ -381,6 +381,9 @@
       ]
     },
   ];
+
+  let courses = WonkStore.getGenerator(DEFAULT_COURSES);
+  const saveCourses = () => WonkStore.saveGenerator(courses);
 
   // ── Algorithm ────────────────────────────────────────────────────────
   function generate() {
@@ -433,9 +436,11 @@
       // events — course-level
       div.querySelector('.cname-input').addEventListener('input', e => {
         course.name = e.target.value;
+        saveCourses();
       });
       div.querySelector('.remove-course').addEventListener('click', () => {
         courses = courses.filter(c => c.id !== course.id);
+        saveCourses();
         renderCourses();
       });
       div.querySelector('.add-sec-btn').addEventListener('click', () => {
@@ -444,6 +449,7 @@
           label: `Sec ${String.fromCharCode(65 + course.sections.length)}`,
           days: [], start: '09:00', end: '10:15'
         });
+        saveCourses();
         renderCourses();
       });
 
@@ -459,10 +465,12 @@
             return;
           }
           course.sections = course.sections.filter(s => s.id !== sid);
+          saveCourses();
           renderCourses();
         });
         row.querySelector('.sec-label').addEventListener('input', e => {
           sec.label = e.target.value;
+          saveCourses();
         });
         row.querySelectorAll('.day-btn').forEach(btn => {
           btn.addEventListener('click', () => {
@@ -470,10 +478,11 @@
             if (sec.days.includes(d)) sec.days = sec.days.filter(x => x !== d);
             else sec.days.push(d);
             btn.classList.toggle('on', sec.days.includes(d));
+            saveCourses();
           });
         });
-        row.querySelector('.sec-start').addEventListener('change', e => { sec.start = e.target.value; });
-        row.querySelector('.sec-end'  ).addEventListener('change', e => { sec.end   = e.target.value; });
+        row.querySelector('.sec-start').addEventListener('change', e => { sec.start = e.target.value; saveCourses(); });
+        row.querySelector('.sec-end'  ).addEventListener('change', e => { sec.end   = e.target.value; saveCourses(); });
       });
 
       list.appendChild(div);
@@ -625,6 +634,7 @@
       id: uid(), name: 'New Course',
       sections: [{ id: uid(), label: 'Sec A', days: [], start: '09:00', end: '10:15' }]
     });
+    saveCourses();
     renderCourses();
   });
 

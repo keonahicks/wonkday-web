@@ -3,6 +3,7 @@ const WonkStore = (() => {
     items: "scheduleItems_v1",
     candidates: "scheduleCandidates_v1",
     calendar: "calendarConnection_v1",
+    generator: "scheduleGenerator_v1",
   };
 
   const DAYS = ["Mon", "Tue", "Wed", "Thu", "Fri"];
@@ -63,6 +64,8 @@ const WonkStore = (() => {
     saveCandidates: (candidates) => save(KEYS.candidates, candidates),
     getCalendar: () => load(KEYS.calendar, DEFAULT_CALENDAR),
     saveCalendar: (calendar) => save(KEYS.calendar, calendar),
+    getGenerator: (fallback) => load(KEYS.generator, fallback),
+    saveGenerator: (courses) => save(KEYS.generator, courses),
     defaultCalendar: () => JSON.parse(JSON.stringify(DEFAULT_CALENDAR)),
     toMinutes,
     fmtTime,
