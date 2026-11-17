@@ -5,6 +5,95 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Saved Schedules · Wonkday</title>
 <link rel="stylesheet" href="css/app.css" />
+<style>
+  main.page { max-width: 1320px; }
+  .layout { display: grid; grid-template-columns: 340px 1fr; gap: 24px; align-items: start; }
+  @media (max-width: 1000px) { .layout { grid-template-columns: 1fr; } }
+
+  /* schedule list */
+  .sched-list { display: flex; flex-direction: column; gap: 12px; }
+  .sched {
+    text-align: left; font-family: inherit; color: inherit; width: 100%;
+    background: #fafbfc; border: 1px solid var(--border); border-radius: 10px;
+    padding: 12px 14px; cursor: pointer;
+  }
+  .sched:hover { border-color: var(--accent); }
+  .sched.selected { background: var(--accent-light); border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
+  .sched .top { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+  .sched .name { font-weight: 700; font-size: 14px; }
+  .badge { font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 999px; white-space: nowrap; }
+  .badge.ok { background: var(--success-light); color: var(--success); }
+  .badge.bad { background: var(--danger-light); color: var(--danger); }
+  .badge.warn { background: #fef9c3; color: #854d0e; }
+  .sched .counts { font-size: 12px; margin: 4px 0 8px; color: var(--muted); }
+  .sched ul { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+  .sched li { font-size: 12px; line-height: 1.35; }
+  .sched li strong { display: block; font-size: 12.5px; }
+  .sched li span { color: var(--muted); }
+  .sched li.hit strong, .sched li.hit span { color: var(--danger); }
+
+  /* calendar header */
+  .cal-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; flex-wrap: wrap; }
+  .cal-top .sub { margin-bottom: 12px; }
+  .btn:disabled { background: #c7c9d1; cursor: not-allowed; }
+  .btn-secondary { background: #fff; color: var(--accent); border: 1px solid var(--accent); }
+  .btn-secondary:hover { background: var(--accent-light); }
+
+  /* week grid */
+  .cal-wrap { overflow-x: auto; }
+  .cal { min-width: 760px; border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
+  .cal-head, .cal-body { display: grid; grid-template-columns: 52px repeat(7, 1fr); }
+  .cal-head div {
+    background: #fafbfc; text-align: center; font-size: 12px; font-weight: 600; color: var(--muted);
+    padding: 8px 4px; border-bottom: 1px solid var(--border); border-left: 1px solid var(--border);
+  }
+  .cal-head div:first-child { border-left: none; }
+  .time-col { position: relative; }
+  .time-col span { position: absolute; right: 6px; font-size: 11px; color: var(--muted); transform: translateY(-50%); }
+  .day-col {
+    position: relative; border-left: 1px solid var(--border);
+    background-image: repeating-linear-gradient(to bottom, transparent 0, transparent 43px, #eceef2 43px, #eceef2 44px);
+  }
+  .blk {
+    position: absolute; border-radius: 6px; padding: 3px 6px; font-size: 11px; line-height: 1.25;
+    overflow: hidden; border: 1px solid transparent; z-index: 2;
+  }
+  .blk strong { display: block; font-weight: 600; }
+  .blk.class { background: var(--class-color); color: #fff; }
+  .blk.event { color: #1f2430; border-left-width: 4px; }
+  .blk.event { border-color: #9ca3af;
+    background: repeating-linear-gradient(45deg, rgba(107,114,128,.28) 0 5px, rgba(107,114,128,.1) 5px 10px); }
+  /* conflicts = red, back-to-back = yellow (conflict wins) */
+  .blk.class.conflict { background: var(--danger); }
+  .blk.event.conflict { border-color: var(--danger); color: #7f1d1d;
+    background: repeating-linear-gradient(45deg, rgba(220,38,38,.35) 0 5px, rgba(220,38,38,.12) 5px 10px); }
+  .blk.class.b2b { background: #facc15; color: #422006; }
+  .blk.event.b2b { border-color: #ca8a04; color: #422006;
+    background: repeating-linear-gradient(45deg, rgba(250,204,21,.55) 0 5px, rgba(250,204,21,.2) 5px 10px); }
+  .legend .sw-ev { width: 14px; height: 10px; border-radius: 3px; border: 1px solid #9ca3af;
+    background: repeating-linear-gradient(45deg, rgba(107,114,128,.35) 0 3px, rgba(107,114,128,.1) 3px 6px); }
+
+  /* modal */
+  .overlay { position: fixed; inset: 0; background: rgba(31,36,48,.5); display: flex; align-items: center; justify-content: center; z-index: 60; padding: 16px; }
+  .modal { background: #fff; border-radius: 12px; padding: 24px; width: 100%; max-width: 460px; box-shadow: 0 20px 50px rgba(0,0,0,.25); }
+  .modal h3 { margin: 0 0 8px; font-size: 18px; }
+  .modal p { margin: 0 0 10px; font-size: 14px; line-height: 1.5; color: var(--muted); }
+  .modal ul { margin: 0 0 12px; padding-left: 18px; font-size: 13px; line-height: 1.5; }
+  .modal .actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 18px; }
+  .modal .spin { display: flex; align-items: center; gap: 12px; font-size: 14px; padding: 8px 0; }
+  .spinner { width: 22px; height: 22px; border-radius: 50%; border: 3px solid var(--accent-light); border-top-color: var(--accent); animation: spin .8s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* confirmation */
+  .done { max-width: 640px; margin: 0 auto; text-align: center; }
+  .done .check { width: 56px; height: 56px; border-radius: 50%; background: var(--success-light); color: var(--success);
+    display: inline-flex; align-items: center; justify-content: center; font-size: 28px; margin-bottom: 8px; }
+  .done ul { list-style: none; padding: 0; margin: 16px 0; text-align: left; display: flex; flex-direction: column; gap: 8px; }
+  .done li { border: 1px solid var(--border); border-radius: 8px; padding: 10px 12px; font-size: 14px; }
+  .done li span { display: block; color: var(--muted); font-size: 12.5px; margin-top: 2px; }
+  .done .actions { display: flex; justify-content: center; gap: 10px; }
+  [hidden] { display: none !important; }
+</style>
 </head>
 <body>
 
@@ -22,17 +111,231 @@
 </nav>
 
 <header class="page-header">
-  <h1>Saved Schedule Builder</h1>
-  <p>Task 2 — Build a saved schedule from candidate course sections, then compare it against your existing commitments.</p>
+  <h1 id="pageTitle">Saved Schedule Builder</h1>
+  <p id="pageSub">Task 2 — Compare your saved schedules against your calendar, then enroll in the one that fits.</p>
 </header>
 
 <main class="page">
-  <section class="panel">
-    <h2>Saved schedules</h2>
-    <p class="sub">This page is being built.</p>
+  <div class="layout" id="browse">
+    <section class="panel">
+      <h2>Saved schedules</h2>
+      <p class="sub">Select one to see it on your calendar.</p>
+      <div class="sched-list" id="schedList"></div>
+    </section>
+
+    <section class="panel">
+      <div class="cal-top">
+        <div>
+          <h2 id="calTitle">Your week</h2>
+          <p class="sub" id="calSub"></p>
+        </div>
+        <button class="btn" id="enrollBtn" disabled>Enroll in this schedule</button>
+      </div>
+      <div class="cal-wrap"><div class="cal" id="cal"></div></div>
+      <div class="legend">
+        <span><span class="swatch" style="background:var(--class-color)"></span>Class</span>
+        <span><span class="sw-ev swatch"></span>Imported from calendar</span>
+        <span><span class="swatch" style="background:var(--danger)"></span>Conflict</span>
+        <span><span class="swatch" style="background:#facc15"></span>Back-to-back</span>
+      </div>
+    </section>
+  </div>
+
+  <section class="panel done" id="done" hidden>
+    <div class="check">✓</div>
+    <h2 style="font-size:20px">You're enrolled!</h2>
+    <p class="sub" id="doneSub"></p>
+    <ul id="doneList"></ul>
+    <div class="actions">
+      <a class="btn btn-secondary" href="index.html">Back to home</a>
+      <a class="btn" href="calendar.html">Sync to my calendar</a>
+    </div>
   </section>
 </main>
 
 <script src="js/store.js"></script>
+<script>
+(() => {
+  /* ---------- Predefined data (edit here to change the demo) ---------- */
+  const EVENTS = [
+    { id: "e1", name: "Study group — BIA 652", type: "commitment", days: ["Mon"], start: "13:00", end: "14:30" },
+    { id: "e2", name: "Data Science Club", type: "commitment", days: ["Wed"], start: "17:00", end: "18:00" },
+    { id: "e3", name: "Internship stand-up", type: "work", days: ["Fri"], start: "09:30", end: "10:00" },
+    { id: "e4", name: "Volunteer tutoring", type: "commitment", days: ["Thu"], start: "18:00", end: "19:30" },
+    { id: "e5", name: "Gym with friends", type: "commitment", days: ["Fri"], start: "18:00", end: "19:00" },
+  ];
+  const ML  = { code: "BIA 652-A", name: "Machine Learning", days: ["Mon", "Wed"], start: "10:00", end: "11:15" };
+  const MA  = { code: "BIA 672-A", name: "Marketing Analytics", days: ["Tue", "Thu"], start: "11:30", end: "12:45" };
+  const SCHEDULES = [
+    { id: "s1", name: "Option 1", classes: [ML, MA,
+      { code: "BIA 695-A", name: "Capstone Studio", days: ["Fri"], start: "09:00", end: "10:00" },
+      { code: "CS 583-A", name: "Big Data Technologies", days: ["Tue", "Thu"], start: "13:00", end: "13:50" },
+      { code: "CS 547-B", name: "Data Visualization", days: ["Mon"], start: "15:30", end: "18:00" } ] },
+    { id: "s2", name: "Option 2", classes: [ML, MA,
+      { code: "BIA 695-B", name: "Capstone Studio", days: ["Fri"], start: "12:00", end: "13:00" },
+      { code: "CS 583-B", name: "Big Data Technologies", days: ["Tue", "Thu"], start: "09:00", end: "10:15" },
+      { code: "CS 547-A", name: "Data Visualization", days: ["Tue"], start: "15:30", end: "18:00" } ] },
+    { id: "s3", name: "Option 3", classes: [ML, MA,
+      { code: "BIA 695-B", name: "Capstone Studio", days: ["Fri"], start: "12:00", end: "13:00" },
+      { code: "CS 583-B", name: "Big Data Technologies", days: ["Tue", "Thu"], start: "09:00", end: "10:15" },
+      { code: "CS 609-A", name: "Datamining and Analysis", days: ["Wed"], start: "18:00", end: "20:30" } ] },
+  ];
+
+  const WEEK = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+  const START_H = 7, END_H = 22, HOUR_PX = 44;
+  const $ = (id) => document.getElementById(id);
+  const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+  const plural = (n, w) => `${n} ${w}${n === 1 ? "" : "s"}`;
+  const mins = WonkStore.toMinutes;
+  const pattern = (it) => `${it.days.join("/")} · ${WonkStore.fmtRange(it.start, it.end)}`;
+  const tOverlap = (a, b) => mins(a.start) < mins(b.end) && mins(b.start) < mins(a.end);
+  const touches = (a, b) => a.end === b.start || b.end === a.start;
+
+  let selected = null;
+
+  /* ---------- Conflict analysis ---------- */
+  function analyze(s) {
+    const items = [...s.classes.map((c, i) => ({ ...c, kind: "class", key: `c${i}` })),
+                   ...EVENTS.map((e) => ({ ...e, kind: "event", key: e.id }))];
+    const flags = {};          // "key|Day" -> "conflict" | "b2b"
+    const conflicts = [], b2bs = [];
+    const flag = (it, day, f) => { const k = `${it.key}|${day}`; if (flags[k] !== "conflict") flags[k] = f; };
+    for (let i = 0; i < items.length; i++) for (let j = i + 1; j < items.length; j++) {
+      const a = items[i], b = items[j];
+      if (a.kind === "event" && b.kind === "event") continue;
+      const shared = a.days.filter((d) => b.days.includes(d));
+      if (!shared.length) continue;
+      const label = `${a.code || a.name} and ${b.code || b.name} (${shared.join("/")})`;
+      if (tOverlap(a, b)) {
+        conflicts.push(label); shared.forEach((d) => { flag(a, d, "conflict"); flag(b, d, "conflict"); });
+      } else if (touches(a, b)) {
+        b2bs.push(label); shared.forEach((d) => { flag(a, d, "b2b"); flag(b, d, "b2b"); });
+      }
+    }
+    return { items, flags, conflicts, b2bs };
+  }
+  const summary = (a) => `${plural(a.conflicts.length, "conflict")}, ${a.b2bs.length} back-to-back`;
+
+  /* ---------- Left column ---------- */
+  function renderList() {
+    $("schedList").innerHTML = SCHEDULES.map((s) => {
+      const a = analyze(s);
+      const bad = new Set(), cls = (i) => a.flags[`c${i}|${s.classes[i].days[0]}`];
+      s.classes.forEach((c, i) => c.days.forEach((d) => { if (a.flags[`c${i}|${d}`] === "conflict") bad.add(i); }));
+      const badge = a.conflicts.length ? "bad" : a.b2bs.length ? "warn" : "ok";
+      return `
+      <button class="sched ${selected === s.id ? "selected" : ""}" data-id="${s.id}" aria-pressed="${selected === s.id}">
+        <div class="top"><span class="name">${s.name}</span>
+          <span class="badge ${badge}">${a.conflicts.length || a.b2bs.length ? "Review" : "No issues"}</span></div>
+        <div class="counts">${summary(a)}</div>
+        <ul>${s.classes.map((c, i) => `
+          <li class="${bad.has(i) ? "hit" : ""}"><strong>${esc(c.code)}: ${esc(c.name)}</strong><span>${pattern(c)}</span></li>`).join("")}
+        </ul>
+      </button>`;
+    }).join("");
+    document.querySelectorAll(".sched").forEach((b) => b.addEventListener("click", () => {
+      selected = selected === b.dataset.id ? null : b.dataset.id;
+      render();
+    }));
+  }
+
+  /* ---------- Weekly calendar ---------- */
+  function renderCal() {
+    const s = SCHEDULES.find((x) => x.id === selected);
+    const a = s ? analyze(s) : { items: EVENTS.map((e) => ({ ...e, kind: "event", key: e.id })), flags: {}, conflicts: [], b2bs: [] };
+    $("calTitle").textContent = s ? `Your week with ${s.name}` : "Your week";
+    $("calSub").textContent = s ? summary(a) + " — conflicts in red, back-to-back in yellow."
+                                : "Your imported calendar events. Select a saved schedule to overlay its classes.";
+    $("enrollBtn").disabled = !s;
+    $("enrollBtn").textContent = s ? `Enroll in ${s.name}` : "Enroll in this schedule";
+
+    let labels = "";
+    for (let h = START_H + 1; h < END_H; h++) {
+      const hh = h % 12 === 0 ? 12 : h % 12;
+      labels += `<span style="top:${(h - START_H) * HOUR_PX}px">${hh} ${h >= 12 ? "PM" : "AM"}</span>`;
+    }
+    const h = (END_H - START_H) * HOUR_PX;
+    let html = `<div class="cal-head"><div></div>${WEEK.map((d) => `<div>${d}</div>`).join("")}</div>
+      <div class="cal-body"><div class="time-col" style="height:${h}px">${labels}</div>`;
+    WEEK.forEach((day) => {
+      const todays = a.items.filter((it) => it.days.includes(day));
+      html += `<div class="day-col" style="height:${h}px">` + todays.map((it) => {
+        const top = (mins(it.start) - START_H * 60) / 60 * HOUR_PX;
+        const ht = Math.max((mins(it.end) - mins(it.start)) / 60 * HOUR_PX - 2, 20);
+        const clash = todays.some((o) => o !== it && tOverlap(o, it));
+        const lane = clash && it.kind === "event" ? 1 : 0;
+        const f = a.flags[`${it.key}|${day}`] || "";
+        const title = it.kind === "class" ? `${it.code}: ${it.name}` : it.name;
+        return `<div class="blk ${it.kind} ${it.kind === "event" ? it.type : ""} ${f}"
+          style="top:${top}px;height:${ht}px;left:${clash ? lane * 50 + 2 : 2}%;width:${clash ? 48 : 96}%"
+          title="${esc(title)} · ${WonkStore.fmtRange(it.start, it.end)}">
+          <strong>${esc(title)}</strong>${WonkStore.fmtRange(it.start, it.end)}</div>`;
+      }).join("") + `</div>`;
+    });
+    $("cal").innerHTML = html + `</div>`;
+  }
+
+  function render() { renderList(); renderCal(); }
+
+  /* ---------- Dialogs ---------- */
+  function modal(title, bodyHtml, buttons) {
+    const o = document.createElement("div");
+    o.className = "overlay";
+    o.innerHTML = `<div class="modal" role="dialog" aria-modal="true"><h3>${title}</h3>${bodyHtml}
+      <div class="actions"></div></div>`;
+    const box = o.querySelector(".actions");
+    (buttons || []).forEach((b) => {
+      const el = document.createElement("button");
+      el.className = `btn ${b.secondary ? "btn-secondary" : ""}`;
+      el.textContent = b.label;
+      el.addEventListener("click", () => { o.remove(); b.onClick && b.onClick(); });
+      box.appendChild(el);
+    });
+    document.body.appendChild(o);
+    return o;
+  }
+
+  function enroll() {
+    const s = SCHEDULES.find((x) => x.id === selected);
+    const a = analyze(s);
+    const confirmStep = () => modal(`Enroll in ${s.name}?`,
+      `<p>You're about to enroll in these ${s.classes.length} classes:</p>
+       <ul>${s.classes.map((c) => `<li>${esc(c.code)}: ${esc(c.name)}</li>`).join("")}</ul>`,
+      [{ label: "Cancel", secondary: true }, { label: "Confirm enrollment", onClick: submit }]);
+
+    if (a.conflicts.length || a.b2bs.length) {
+      modal("Heads up: this schedule overlaps your calendar",
+        `<p>None of the classes in ${s.name} conflict with each other, but there are conflicts with your calendar.</p>
+         <ul>${a.conflicts.map((c) => `<li><strong style="color:var(--danger)">Conflict:</strong> ${esc(c)}</li>`).join("")}
+         ${a.b2bs.map((c) => `<li><strong style="color:#a16207">Back-to-back:</strong> ${esc(c)}</li>`).join("")}</ul>`,
+        [{ label: "Go back", secondary: true }, { label: "Continue", onClick: confirmStep }]);
+    } else confirmStep();
+  }
+
+  function submit() {
+    const s = SCHEDULES.find((x) => x.id === selected);
+    const wait = modal("Enrolling…", `<div class="spin"><span class="spinner"></span>Submitting your enrollment for ${s.name}…</div>`);
+    setTimeout(() => {
+      wait.remove();
+      try { localStorage.setItem("enrolledSchedule_v1", JSON.stringify(s)); } catch (e) {}
+      showDone(s);
+    }, 1800);
+  }
+
+  function showDone(s) {
+    $("browse").hidden = true;
+    $("done").hidden = false;
+    $("pageTitle").textContent = "Enrollment confirmed";
+    $("pageSub").textContent = "Spring 2027 registration";
+    $("doneSub").textContent = `You're registered for ${plural(s.classes.length, "class")} from ${s.name}.`;
+    $("doneList").innerHTML = s.classes.map((c) =>
+      `<li><strong>${esc(c.code)}: ${esc(c.name)}</strong><span>${pattern(c)}</span></li>`).join("");
+    window.scrollTo(0, 0);
+  }
+
+  $("enrollBtn").addEventListener("click", enroll);
+  render();
+})();
+</script>
 </body>
 </html>

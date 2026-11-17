@@ -15,7 +15,7 @@ cd wonkday-web
 python3 -m http.server 8000
 ```
 
-Then open <http://localhost:8000> in Chrome.
+Then open <http://localhost:8000> in a browser.
 
 **Option B: VS Code**
 Install the **Live Server** extension, right-click `index.html`, and choose **Open with Live Server**.
@@ -24,3 +24,4 @@ To reset the prototype to its starting state, open the browser's DevTools → Ap
 
 ## Team contribution
 Keona: Created app base (shared nav bar, page layout and styling, home page, and shared data) and Task 1, calendar sync
+Dan: Created saved schedule page (task 2), based on previous prototypes and implementing feedback from assignment 5
